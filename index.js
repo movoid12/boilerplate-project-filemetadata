@@ -15,24 +15,27 @@ app.get("/", function (req, res) {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.post("/api/fileanalyse", function (req, res) {
-  const upload = multer({ dest: "uploads/" }).single("upfile");
+const upload = multer({ dest: "uploads/" });
 
-  upload(req, res, function (err) {
-    if (err) {
-      return res.status(400).json({ error: "File upload failed" });
-    }
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+app.post("/api/fileanalyse", upload.single("upfile"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
 
-    res.json({
-      name: file.originalname,
-      type: file.mimetype,
-      size: file.size,
-    });
+  const file = req.file;
+  res.json({
+    name: file.originalname,
+    type: file.mimetype,
+    size: file.size,
   });
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    // Handle multer-specific errors
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
 });
 
 const port = process.env.PORT || 3000;
